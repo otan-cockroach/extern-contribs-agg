@@ -58,7 +58,7 @@ var flagUseIntermediate = flag.Bool(
 )
 var flagBlocklist = flag.String(
 	"blocklist",
-	"petermattis-square,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel",
+	"petermattis-square,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze",
 	"comma separated list of people to exclude",
 )
 

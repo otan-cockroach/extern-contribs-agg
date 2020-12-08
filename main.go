@@ -58,7 +58,7 @@ var flagUseIntermediate = flag.Bool(
 )
 var flagBlocklist = flag.String(
 	"blocklist",
-	"petermattis-square,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze",
+	"petermattis-square,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze,alan-mas",
 	"comma separated list of people to exclude",
 )
 
@@ -284,16 +284,17 @@ func intermediateOutputToOutput(ctx context.Context, ghClient *github.Client) {
 	}
 
 	out := fmt.Sprintf(
-		`
+		`# External Contributors - Hall of Fame
+
 Last generated at %s.
 
 Contributions from: %s.
 
-# All-Time External Contributors
+## All-Time External Contributors
 
 %s
 
-# By Year
+## By Year
 `,
 		time.Now().Format(time.RFC3339),
 		strings.Join(fromRepos, ", "),
@@ -301,7 +302,7 @@ Contributions from: %s.
 	)
 	for year := time.Now().Year(); year >= 2014; year-- {
 		out += fmt.Sprintf(
-			`## %d
+			`### %d
 
 %s
 

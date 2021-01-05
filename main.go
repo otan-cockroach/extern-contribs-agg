@@ -58,8 +58,18 @@ var flagUseIntermediate = flag.Bool(
 )
 var flagBlocklist = flag.String(
 	"blocklist",
-	"petermattis-square,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze,alan-mas",
+	"petermattis-square,chriscasano,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze,alan-mas",
 	"comma separated list of people to exclude",
+)
+var flagStartDate = flag.String(
+	"start_date",
+	"2014-01-01",
+	"YYYY-MM-DD date of when to start",
+)
+var flagEndDate = flag.String(
+	"end_date",
+	"",
+	"YYYY-MM-DD date of when to end - defaults to now",
 )
 
 func getOrganizationLogins(
@@ -200,7 +210,9 @@ func formatContributors(users map[string]user, from time.Time, to time.Time) str
 	return fmt.Sprintf("%d contributors, %d commits\n\n", len(toSort), total) + strings.Join(ret, ", ")
 }
 
-func intermediateOutputToOutput(ctx context.Context, ghClient *github.Client) {
+func intermediateOutputToOutput(
+	ctx context.Context, ghClient *github.Client, start time.Time, end time.Time,
+) {
 	inFile, err := os.Open(*flagIntermediateOutput)
 	if err != nil {
 		panic(err)
@@ -298,9 +310,9 @@ Contributions from: %s.
 `,
 		time.Now().Format(time.RFC3339),
 		strings.Join(fromRepos, ", "),
-		formatContributors(users, time.Date(2014, 1, 1, 0, 0, 0, 0, time.UTC), time.Now()),
+		formatContributors(users, start, end),
 	)
-	for year := time.Now().Year(); year >= 2014; year-- {
+	for year := end.Year(); year >= start.Year(); year-- {
 		out += fmt.Sprintf(
 			`### %d
 
@@ -339,8 +351,21 @@ func main() {
 		panic(err)
 	}
 
+	start, err := time.Parse("2006-01-02", *flagStartDate)
+	if err != nil {
+		panic(fmt.Sprintf("invalid start date %s: %v", *flagStartDate, err))
+	}
+	end := time.Now()
+	if *flagEndDate != "" {
+		end, err = time.Parse("2006-01-02", *flagEndDate)
+		if err != nil {
+			panic(fmt.Sprintf("invalid end date %s: %v", *flagEndDate, err))
+		}
+		end = end.AddDate(0, 0, 1).Add(-time.Second)
+	}
+
 	if *flagUseIntermediate {
-		intermediateOutputToOutput(ctx, ghClient)
+		intermediateOutputToOutput(ctx, ghClient, start, end)
 		return
 	}
 
@@ -361,6 +386,8 @@ func main() {
 			ListOptions: github.ListOptions{
 				PerPage: 1000,
 			},
+			Since: start,
+			Until: end,
 		}
 		more := true
 		for more {
@@ -374,6 +401,10 @@ func main() {
 				panic(err)
 			}
 			for _, commit := range commits {
+				d := commit.GetCommit().GetAuthor().GetDate()
+				if start.After(d) || d.After(end) {
+					continue
+				}
 				if len(commit.GetCommit().Parents) > 0 {
 					continue
 				}
@@ -435,5 +466,5 @@ func main() {
 		panic(err)
 	}
 
-	intermediateOutputToOutput(ctx, ghClient)
+	intermediateOutputToOutput(ctx, ghClient, start, end)
 }

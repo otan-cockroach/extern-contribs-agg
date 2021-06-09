@@ -58,7 +58,7 @@ var flagUseIntermediate = flag.Bool(
 )
 var flagBlocklist = flag.String(
 	"blocklist",
-	"petermattis-square,chriscasano,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze,alan-mas",
+	"petermattis-square,chriscasano,craig[bot],nigeltao,dependabot,dependabot[bot],alimi,timgraham,papb,chrislovecnm,marlabrizel,rkruze,alan-mas,ajwerner,alinadonisa,douglasselias,kannanlakshmi,mnovelodou,JuanLeon1,keithdoggett,dougmrqs,rainleander,mgoddard",
 	"comma separated list of people to exclude",
 )
 var flagStartDate = flag.String(
@@ -164,6 +164,34 @@ func getOrganizationEmailsAndNamesFromAuthors(
 			}
 		}
 	}
+
+	// Also grab organisation members.
+	for _, org := range []string{"cockroachdb", "cockroachlabs"} {
+		opts := &github.ListMembersOptions{
+			ListOptions: github.ListOptions{
+				PerPage: 100,
+			},
+		}
+		more := true
+		for more {
+			members, resp, err := ghClient.Organizations.ListMembers(
+				ctx,
+				org,
+				opts,
+			)
+			if err != nil {
+				panic(err)
+			}
+			for _, member := range members {
+				retLogins[member.GetLogin()] = struct{}{}
+			}
+			more = resp.NextPage != 0
+			if more {
+				opts.Page = resp.NextPage
+			}
+		}
+	}
+
 	return retEmails, retLogins
 }
 
